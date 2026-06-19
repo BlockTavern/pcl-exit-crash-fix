@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "pcl_exit_crash_fix",
+  "version": "${version}",
+  "name": "PCL Exit Crash Fix",
+  "description": "Client-side workaround for a Fabric registry-sync disconnect crash in this Minecraft 1.21 modpack.",
+  "authors": [
+    "Re0XIAOPA",
+    "Codex"
+  ],
+  "contact": {},
+  "license": "MIT",
+  "environment": "client",
+  "entrypoints": {},
+  "mixins": [
+    "pcl-exit-crash-fix.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.16.0",
+    "minecraft": "1.21",
+    "fabric-registry-sync-v0": "*"
+  }
+}
