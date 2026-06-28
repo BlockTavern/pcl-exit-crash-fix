@@ -1,0 +1,68 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Read version from gradle.properties
+        id: props
+        run: |
+          VER=$(grep '^mod_version=' gradle.properties | cut -d'=' -f2)
+          echo "version=$VER" >> "$GITHUB_OUTPUT"
+
+      - name: Validate tag matches project version
+        run: |
+          TAG="${GITHUB_REF#refs/tags/v}"
+          PROP_VER="${{ steps.props.outputs.version }}"
+          if [ "$TAG" != "$PROP_VER" ]; then
+            echo "::error::Tag version ($TAG) does not match mod_version in gradle.properties ($PROP_VER)"
+            exit 1
+          fi
+
+      - name: Build
+        run: ./gradlew build
+
+      - name: Generate release notes
+        run: |
+          VER="${{ steps.props.outputs.version }}"
+          PREV_TAG=$(git tag --sort=-creatordate | grep '^v' | grep -v "^v$VER$" | head -1)
+          if [ -z "$PREV_TAG" ]; then
+            LOG=$(git log --pretty=format:"- %s (%h)" HEAD)
+          else
+            LOG=$(git log --pretty=format:"- %s (%h)" "$PREV_TAG"..HEAD)
+          fi
+          {
+            echo "## Changes"
+            echo "$LOG"
+            echo ""
+            echo "## Compatibility"
+            echo "- Minecraft 1.21"
+            echo "- Fabric Loader 0.16.9+"
+            echo "- Java 21"
+            echo "- 仅需安装在客户端"
+            echo ""
+            echo "## Installation"
+            echo "将 \`pcl-exit-crash-fix-$VER.jar\` 放入客户端的 \`mods\` 文件夹。"
+          } > release_body.md
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "1.21-PECF-Fabric-v${{ steps.props.outputs.version }}"
+          body_path: release_body.md
+          files: build/libs/pcl-exit-crash-fix-${{ steps.props.outputs.version }}.jar
