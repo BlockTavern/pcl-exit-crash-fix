@@ -35,7 +35,9 @@ jobs:
           fi
 
       - name: Build
-        run: ./gradlew build
+        run: |
+          chmod +x gradlew
+          ./gradlew build
 
       - name: Generate release notes
         run: |
